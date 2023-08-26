@@ -30,11 +30,13 @@ ni_devices_utilities.write_digital_data(timing_task, timing_wave)
 # configure pulse
 
 # configure sample
+sample_time = 10
 sample_channel = 'cDAQ9189-1EFE359Mod1/ai0'
-sample_rate = 1e6
+sample_rate = 50e3
 sample_trigger = '/cDAQ9189-1EFE359/PFI0'
 sample_task, data_buffer = ni_devices_utilities.cfg_AI_task(
-        channel=sample_channel, rate=sample_rate, trigger=sample_trigger
+        sample_time, channel=sample_channel,
+        rate=sample_rate, trigger=sample_trigger
 )
 
 # ------------- Start timing loop ------------------
