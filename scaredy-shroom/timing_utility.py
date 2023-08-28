@@ -42,7 +42,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def generate_timing_wave(timing_sequence_list, sample_rate, bit_num=8):
+def generate_timing_wave(timing_sequence_list, sample_rate, bit_num=8, n_channel=1):
     """Generate digital wave according to timing sequence.
 
     Parameters
@@ -50,16 +50,30 @@ def generate_timing_wave(timing_sequence_list, sample_rate, bit_num=8):
         timing_sequence_list : list
         sample_rate : float
         bit_num : int
+        n_channel : int
+            The number of channel containing in timing wave.
 
     Returns
     -------
         timing_wave : numpy.ndarray
-            1D NumPy array containing digital wave.
+            1D NumPy array containing digital wave if the timing wave containing single channel.
+            2D Numpy array containing digital wave if the timing wave containing multiple channel,
+        each row corresponding to a channel, the littler bit at the more front row.
     """
     dtype = np.uint8 if bit_num < 9 else np.uint16
-    timing_wave = np.concatenate(
-        [np.full(round(t[1] * sample_rate), t[0], dtype=dtype) for t in timing_sequence_list]
-    )
+    if n_channel == 1:
+        timing_wave = np.concatenate(
+            [np.full(round(t[1] * sample_rate), t[0], dtype=dtype) for t in timing_sequence_list]
+        )
+    else:
+        timing_wave_list = []
+        for idx in range(n_channel):
+            timing_wave_single_channel = np.concatenate(
+                [np.full(round(t[1] * sample_rate), (t[0] >> bit_num*idx) & 0xFF, dtype=dtype)
+                 for t in timing_sequence_list]
+            )
+            timing_wave_list.append(timing_wave_single_channel)
+        timing_wave = np.row_stack(timing_wave_list)
     return timing_wave
 
 

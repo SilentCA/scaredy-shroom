@@ -94,7 +94,11 @@ def cfg_DO_task(channel='/cDAQ1DIOM/port0', rate=1e4):
         A NI-DAQmx digital output task.
     """
     task = nidaqmx.Task()
-    task.do_channels.add_do_chan(channel)
+    if isinstance(channel, list):
+        for chan in channel:
+            task.do_channels.add_do_chan(chan)
+    else:
+        task.do_channels.add_do_chan(channel)
     task.timing.samp_clk_rate = rate
     task.timing.samp_timing_type = nidaqmx.constants.SampleTimingType.SAMPLE_CLOCK
     task.timing.samp_quant_samp_mode = nidaqmx.constants.AcquisitionType.CONTINUOUS
@@ -106,7 +110,7 @@ def cfg_DO_task(channel='/cDAQ1DIOM/port0', rate=1e4):
     return task
 
 
-def write_digital_data(task, data):
+def write_digital_data(task, data, multi_channel=False):
     """Write digital data to task.
 
     Parameters
@@ -115,8 +119,13 @@ def write_digital_data(task, data):
         A NI-DAQmx digital output task.
     data : numpy.ndarray
         1D NumPy array containing digital wave.
+    multi_channel : bool
+        Whether task containing multiple channel.
     """
-    writer = nidaqmx.stream_writers.DigitalSingleChannelWriter(task.out_stream)
+    if multi_channel:
+        writer = nidaqmx.stream_writers.DigitalMultiChannelWriter(task.out_stream)
+    else:
+        writer = nidaqmx.stream_writers.DigitalSingleChannelWriter(task.out_stream)
     writer.write_many_sample_port_byte(data)
 
 

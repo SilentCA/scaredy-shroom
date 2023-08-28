@@ -10,30 +10,35 @@ import ni_devices_utilities
 import numpy as np
 
 
+# ------------- Configure experiment ---------------
+timing_sequence_list = [
+    (0xFF00, 1),
+    (0x00FF, 1),
+    (0xFF00, 1)
+]
+timing_rate = 5e6      # Uint: Hz
+sample_time = 10       # Unit: second
+sample_rate = 50e3     # Unit: Hz
+# Experimental data save path
+data_file_path = r'C:\Data\data.npy'
+
+timing_channel = ['/cDAQ9189-1EFE359Mod3/port0', '/cDAQ9189-1EFE359Mod4/port0']
+sample_channel = 'cDAQ9189-1EFE359Mod1/ai0'
+# Start trigger
+sample_trigger = '/cDAQ9189-1EFE359/PFI0'
+
+
 # ------------- Configure devices ------------------
 # configure timing
-timing_sequence_list = [
-            (0b10, 3),
-            (0b01, 2),
-            (0b10, 4)
-            ]
-timing_rate = 5e6
-bit_num = 8
 timing_wave = timing_utility.generate_timing_wave(
         timing_sequence_list,
-        timing_rate, bit_num)
+        timing_rate, n_channel=2)
 timing_task = ni_devices_utilities.cfg_DO_task(
-        channel='/cDAQ9189-1EFE359Mod4/port0',
+        channel=timing_channel,
         rate=timing_rate)
-ni_devices_utilities.write_digital_data(timing_task, timing_wave)
-
-# configure pulse
+ni_devices_utilities.write_digital_data(timing_task, timing_wave, multi_channel=True)
 
 # configure sample
-sample_time = 10
-sample_channel = 'cDAQ9189-1EFE359Mod1/ai0'
-sample_rate = 50e3
-sample_trigger = '/cDAQ9189-1EFE359/PFI0'
 sample_task, data_buffer = ni_devices_utilities.cfg_AI_task(
         sample_time, channel=sample_channel,
         rate=sample_rate, trigger=sample_trigger
@@ -54,5 +59,4 @@ timing_task.stop()
 timing_task.close()
 
 # ------------- Save data --------------------------
-data_file_path = r'C:\Data\data.npy'
 np.save(data_file_path, data)
