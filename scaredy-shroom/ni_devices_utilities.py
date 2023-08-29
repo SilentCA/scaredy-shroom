@@ -21,7 +21,7 @@ def cfg_AI_task(samp_time, channel='cDAQ1AIM/ai0', rate=2.5e4, trigger='/cDAQ1/P
     ----------
     samp_time : float
         Sample time.
-    channel : str
+    channel : str, list
         Analog input channel name.
     rate : float
         Sample rate.
@@ -37,14 +37,22 @@ def cfg_AI_task(samp_time, channel='cDAQ1AIM/ai0', rate=2.5e4, trigger='/cDAQ1/P
     """
     # Create and configure task
     task = nidaqmx.Task()
-    task.ai_channels.add_ai_voltage_chan(channel)
+    if isinstance(channel, list):
+        multiple_channel = True
+        for chan in channel:
+            task.ai_channels.add_ai_voltage_chan(chan)
+    else:
+        task.ai_channels.add_ai_voltage_chan(channel)
     task.timing.samp_clk_rate = rate
     num_samples = int(samp_time * rate)
     task.timing.samp_quant_samp_per_chan = num_samples
     task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger,
                                                         trigger_edge=nidaqmx.constants.Edge.RISING)
 
-    data = np.empty(num_samples, dtype=np.float64)
+    if multiple_channel:
+        data = np.empty((len(channel), num_samples), dtype=np.float64)
+    else:
+        data = np.empty(num_samples, dtype=np.float64)
 
     return task, data
 
@@ -72,9 +80,12 @@ def read_data(task, data, timeout=nidaqmx.constants.WAIT_INFINITELY):
     data : numpy.ndarray
         1D NumPy array holding the samples requested.
     """
-    reader = nidaqmx.stream_readers.AnalogSingleChannelReader(task.in_stream)
+    if task.number_of_channels == 1:
+        reader = nidaqmx.stream_readers.AnalogSingleChannelReader(task.in_stream)
+    else:
+        reader = nidaqmx.stream_readers.AnalogMultiChannelReader(task.in_stream)
     # If set `timeout` to `nidaqmx.constants.WAIT_INFINITELY`, it will wait infinitely. 
-    reader.read_many_sample(data, len(data), timeout=timeout)
+    reader.read_many_sample(data, int(data.size/task.number_of_channels), timeout=timeout)
     return data
 
 
@@ -83,7 +94,7 @@ def cfg_DO_task(channel='/cDAQ1DIOM/port0', rate=1e4):
 
     Parameters
     ----------
-    channel : str
+    channel : str, list
         Digital output channel name.
     rate : float
         Sample rate.

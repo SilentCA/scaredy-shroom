@@ -29,9 +29,11 @@ sample_rate = 50e3     # Unit: Hz
 data_file_path = r'C:\Data'
 
 timing_channel = ['/cDAQ9189-1EFE359Mod3/port0', '/cDAQ9189-1EFE359Mod4/port0']
-sample_channel = 'cDAQ9189-1EFE359Mod1/ai0'
+sample_channel = ['cDAQ9189-1EFE359Mod1/ai0', 'cDAQ9189-1EFE359Mod1/ai1']
 # Start trigger
 sample_trigger = '/cDAQ9189-1EFE359/PFI0'
+
+data_file_header = 'times;ai0;ai1'
 
 
 # ------------- Configure devices ------------------
@@ -63,9 +65,10 @@ for _ in range(repeat_time):
     # ------------- Save data --------------------------
     save_path = os.path.join(data_file_path, datetime_str()+'.csv')
     # Generate timeline
-    times = np.linspace(start=0, stop=len(data)/sample_rate, num=len(data), endpoint=False)
+    data_length = int(data.size/sample_task.number_of_channels)
+    times = np.linspace(start=0, stop=data_length/sample_rate, num=data_length, endpoint=False)
     # TODO: may have a good method to save.
-    np.savetxt(save_path, np.array((times, data)).T, delimiter=';', header='time; data')
+    np.savetxt(save_path, np.vstack((times, data)).T, delimiter=';', header=data_file_header)
 
 # ------------- Release resources ------------------
 sample_task.stop()
