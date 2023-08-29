@@ -8,19 +8,25 @@
 import timing_utility
 import ni_devices_utilities
 import numpy as np
+import os
+import datetime
+
+
+datetime_str = lambda: str(datetime.datetime.now())[2:-7].replace(':', '.')
 
 
 # ------------- Configure experiment ---------------
+repeat_time = 2        # repeat experiment for given time
 timing_sequence_list = [
     (0xFF00, 1),
     (0x00FF, 1),
     (0xFF00, 1)
 ]
 timing_rate = 5e6      # Uint: Hz
-sample_time = 10       # Unit: second
+sample_time = 1        # Unit: second
 sample_rate = 50e3     # Unit: Hz
 # Experimental data save path
-data_file_path = r'C:\Data\data.npy'
+data_file_path = r'C:\Data'
 
 timing_channel = ['/cDAQ9189-1EFE359Mod3/port0', '/cDAQ9189-1EFE359Mod4/port0']
 sample_channel = 'cDAQ9189-1EFE359Mod1/ai0'
@@ -50,13 +56,19 @@ timing_task.start()
 
 # ------------- Sample data ------------------------
 sample_task.start()
-data = ni_devices_utilities.read_data(sample_task, data_buffer)
+
+for _ in range(repeat_time):
+    data = ni_devices_utilities.read_data(sample_task, data_buffer)
+
+    # ------------- Save data --------------------------
+    save_path = os.path.join(data_file_path, datetime_str()+'.csv')
+    # Generate timeline
+    times = np.linspace(start=0, stop=len(data)/sample_rate, num=len(data), endpoint=False)
+    # TODO: may have a good method to save.
+    np.savetxt(save_path, np.array((times, data)).T, delimiter=';', header='time; data')
 
 # ------------- Release resources ------------------
 sample_task.stop()
 sample_task.close()
 timing_task.stop()
 timing_task.close()
-
-# ------------- Save data --------------------------
-np.save(data_file_path, data)
