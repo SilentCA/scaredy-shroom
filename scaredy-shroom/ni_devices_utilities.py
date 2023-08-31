@@ -36,9 +36,11 @@ def cfg_AI_task(samp_time, channel='cDAQ1AIM/ai0', rate=2.5e4, trigger='/cDAQ1/P
         1D NumPy array to hold samples.
     """
     # Create and configure task
+    multiple_channel = False
     task = nidaqmx.Task()
     if isinstance(channel, list):
-        multiple_channel = True
+        if len(channel) > 1:
+            multiple_channel = True
         for chan in channel:
             task.ai_channels.add_ai_voltage_chan(chan)
     else:
@@ -121,7 +123,7 @@ def cfg_DO_task(channel='/cDAQ1DIOM/port0', rate=1e4):
     return task
 
 
-def write_digital_data(task, data, multi_channel=False):
+def write_digital_data(task, data):
     """Write digital data to task.
 
     Parameters
@@ -130,10 +132,8 @@ def write_digital_data(task, data, multi_channel=False):
         A NI-DAQmx digital output task.
     data : numpy.ndarray
         1D NumPy array containing digital wave.
-    multi_channel : bool
-        Whether task containing multiple channel.
     """
-    if multi_channel:
+    if task.number_of_channels > 1:
         writer = nidaqmx.stream_writers.DigitalMultiChannelWriter(task.out_stream)
     else:
         writer = nidaqmx.stream_writers.DigitalSingleChannelWriter(task.out_stream)

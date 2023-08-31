@@ -44,7 +44,7 @@ timing_wave = timing_utility.generate_timing_wave(
 timing_task = ni_devices_utilities.cfg_DO_task(
         channel=timing_channel,
         rate=timing_rate)
-ni_devices_utilities.write_digital_data(timing_task, timing_wave, multi_channel=True)
+ni_devices_utilities.write_digital_data(timing_task, timing_wave)
 
 # configure sample
 sample_task, data_buffer = ni_devices_utilities.cfg_AI_task(
