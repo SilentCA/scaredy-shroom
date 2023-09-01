@@ -12,7 +12,10 @@ import os
 import datetime
 
 
-datetime_str = lambda: str(datetime.datetime.now())[2:-7].replace(':', '.')
+def datetime_str():
+    """Return datetime string.
+    """
+    return str(datetime.datetime.now())[2:-7].replace(':', '.')
 
 
 # ------------- Configure experiment ---------------
@@ -38,29 +41,35 @@ data_file_header = 'times;ai0;ai1'
 
 # ------------- Configure devices ------------------
 # configure timing
+print("Configure timing device.")
 timing_wave = timing_utility.generate_timing_wave(
         timing_sequence_list,
         timing_rate, n_channel=2)
 timing_task = ni_devices_utilities.cfg_DO_task(
         channel=timing_channel,
         rate=timing_rate)
+print("Write timing data to device.")
 ni_devices_utilities.write_digital_data(timing_task, timing_wave)
 
 # configure sample
+print("Configure sample device.")
 sample_task, data_buffer = ni_devices_utilities.cfg_AI_task(
         sample_time, channel=sample_channel,
         rate=sample_rate, trigger=sample_trigger
 )
 
 # ------------- Start timing loop ------------------
+print("Start timing loop")
 timing_task.start()
 
 
 # ------------- Sample data ------------------------
-sample_task.start()
-
-for _ in range(repeat_time):
+for idx in range(1, repeat_time+1):
+    print(f"Sampling... Total: {repeat_time}, running: {idx}.")
+    sample_task.start()
+    print("----> Read sampling data.")
     data = ni_devices_utilities.read_data(sample_task, data_buffer)
+    sample_task.stop()
 
     # ------------- Save data --------------------------
     save_path = os.path.join(data_file_path, datetime_str()+'.csv')
@@ -68,10 +77,14 @@ for _ in range(repeat_time):
     data_length = int(data.size/sample_task.number_of_channels)
     times = np.linspace(start=0, stop=data_length/sample_rate, num=data_length, endpoint=False)
     # TODO: may have a good method to save.
+    print("----> Save data file.")
     np.savetxt(save_path, np.vstack((times, data)).T, delimiter=';', header=data_file_header)
 
 # ------------- Release resources ------------------
-sample_task.stop()
+print("All work done. Good luck.")
 sample_task.close()
+# set final output state to low level
+number_of_channels = len(timing_channel) if isinstance(timing_channel, list) else 1
+timing_task.write([0]*number_of_channels, auto_start=True)
 timing_task.stop()
 timing_task.close()

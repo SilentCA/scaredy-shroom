@@ -21,7 +21,7 @@ def cfg_AI_task(samp_time, channel='cDAQ1AIM/ai0', rate=2.5e4, trigger='/cDAQ1/P
     ----------
     samp_time : float
         Sample time.
-    channel : str, list
+    channel : str, list[str]
         Analog input channel name.
     rate : float
         Sample rate.
@@ -47,6 +47,7 @@ def cfg_AI_task(samp_time, channel='cDAQ1AIM/ai0', rate=2.5e4, trigger='/cDAQ1/P
         task.ai_channels.add_ai_voltage_chan(channel)
     task.timing.samp_clk_rate = rate
     num_samples = int(samp_time * rate)
+    task.timing.samp_quant_samp_mode = nidaqmx.constants.AcquisitionType.FINITE
     task.timing.samp_quant_samp_per_chan = num_samples
     task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger,
                                                         trigger_edge=nidaqmx.constants.Edge.RISING)
@@ -87,7 +88,7 @@ def read_data(task, data, timeout=nidaqmx.constants.WAIT_INFINITELY):
     else:
         reader = nidaqmx.stream_readers.AnalogMultiChannelReader(task.in_stream)
     # If set `timeout` to `nidaqmx.constants.WAIT_INFINITELY`, it will wait infinitely. 
-    reader.read_many_sample(data, int(data.size/task.number_of_channels), timeout=timeout)
+    reader.read_many_sample(data, timeout=timeout)
     return data
 
 
@@ -96,7 +97,7 @@ def cfg_DO_task(channel='/cDAQ1DIOM/port0', rate=1e4):
 
     Parameters
     ----------
-    channel : str, list
+    channel : str, list[str]
         Digital output channel name.
     rate : float
         Sample rate.
@@ -119,7 +120,7 @@ def cfg_DO_task(channel='/cDAQ1DIOM/port0', rate=1e4):
     # task.timing.samp_quant_samp_mode = nidaqmx.constants.AcquisitionType.FINITE
     # may not need
     # task.timing.samp_quant_samp_per_chan = buffer_length
-    # task.out_stream.regen_mode = nidaqmx.constants.RegenerationMode.ALLOW_REGENERATION
+    task.out_stream.regen_mode = nidaqmx.constants.RegenerationMode.ALLOW_REGENERATION
     return task
 
 
